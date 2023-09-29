@@ -4,6 +4,7 @@ import os
 from os import listdir
 from os.path import isfile, join, getmtime, getsize
 import time
+from datetime import datetime
 
 # Define the list of allowed inner commands and cmd commands
 inner_cmds = {
@@ -20,31 +21,71 @@ external_cmds = {
 }
 
 
-def custom_ls(mypath):
-    try:
-        items = listdir(mypath)
+def custom_ls(args):
+    if len(args) == 0:
+        # Perform ls in the current directory
+        files = os.listdir()
+        for file in files:
+            print(file)
+    elif len(args) == 1:
+        try:
+            # Change directory to the specified directory
+            mypath = os.path.join(os.getcwd(), args[0])
+            os.chdir(mypath)
 
-        for item in items:
-            full_name = join(mypath, item)
-            if isfile(full_name):
-                print(f"{time.ctime(getmtime(full_name))}\t\t{str(getsize(full_name))}\t{item}")
-            else:
-                print(f"{time.ctime(getmtime(full_name))}\t<Dir>\t\t{item}")
-    except Exception as e:
-        print("Error in custom_ls:", str(e))
+            # Perform ls in the specified directory
+            files = os.listdir()
+            for file in files:
+                print(file)
+        except FileNotFoundError:
+            print("Directory not found.")
+    else:
+        print("Invalid command. Usage: custom_ls [directory]")
 
 def set_command(args):
-    if len(args) != 2:
+    if len(args) == 0:
+        # Display all environment variables
+        for var in os.environ:
+            print(f"{var}={os.environ[var]}")
+    elif len(args) != 1:
         print("Usage: set <variable_name>=<value>")
+    else:
+        # Split the argument into variable name and value
+        variable, value = args[0].split("=")
+    
+        # Set the environment variable
+        os.environ[variable] = value
+    
+        print(f"Set {variable}={value}")
+
+def change_directory(args):
+
+    # print current directory 
+    if len(args) == 0:
+        print(os.getcwd())
         return
+    
+    args = args[0]
+    if not os.path.isdir(args) and args != "":
+        print("The system cannot find the path specified.")
+        return
+    
+    dir = os.getcwd()
+    
+    if args == '/' or args == '\\':
+        dir = os.chdir("/")
 
-    # Split the argument into variable name and value
-    variable, value = args[1].split("=")
+    else:
+        new_path = args
+        # Change the PATH environment variable to the new full path
+        os.environ["PATH"] = new_path
+        dir = new_path
+        
+    os.chdir(dir)
+    return dir
 
-    # Set the environment variable
-    os.environ[variable] = value
 
-    print(f"Set {variable}={value}")
+
 
 def handle_inner_command(command, arguments):
     try:
@@ -68,8 +109,7 @@ def handle_inner_command(command, arguments):
                     print(f"{cmd}: {description}")
         elif command == "cd":
             try:
-                # Change directory using subprocess
-                subprocess.run(["cd"] + arguments, shell=True)
+                change_directory(arguments)
             except Exception as e:
                 print("Error in cd:", str(e))
         elif command == "set":
@@ -85,9 +125,9 @@ def handle_external_command(command, arguments):
     try:
         if command == "ls":
             # Call the custom_ls function with the current directory
-            subprocess.run("ls", "-lh")
-
-            # custom_ls(os.getcwd())
+            custom_ls(arguments)
+        elif command == "time":
+            print(datetime.now().time())
         else:
             # Execute cmd commands using subprocess
             subprocess.run([command] + arguments, shell=True)
