@@ -85,7 +85,9 @@ def handle_external_command(command, arguments):
     try:
         if command == "ls":
             # Call the custom_ls function with the current directory
-            custom_ls(os.getcwd())
+            subprocess.run("ls", "-lh")
+
+            # custom_ls(os.getcwd())
         else:
             # Execute cmd commands using subprocess
             subprocess.run([command] + arguments, shell=True)
